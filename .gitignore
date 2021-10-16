@@ -99,6 +99,7 @@ lib/
 bin/
 pyenv.cfg
 .Python
+.DS_Store
 
 # Spyder project settings
 .spyderproject
