@@ -1,0 +1,2 @@
+var key = ""
+var secret = ""

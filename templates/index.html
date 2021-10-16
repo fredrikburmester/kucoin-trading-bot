@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.2.1/dist/chart.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/hmac-sha256.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/enc-base64.min.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="grid">
+        <div class="navbar">
+            <h1>My Portfolio</h1>
+        </div>
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+    <script>
+        // Make a request for a user with a given ID
+        var ctx = document.getElementById('myChart').getContext('2d');
+
+        async function getPersonalHoldings() {
+            var data = null
+            await axios.get('/api/data')
+                .then(function (response) {
+                    // handle success
+                    data = response.data
+                    
+                    // for (let index = 0; index < data.balance.length; index++) {
+                    //     var element = data.balance[index];
+                    //     data.balance[index] = parseFloat(element)
+                    // }
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+                .then(function () {
+                    // always executed
+                });
+                return data
+        }
+
+        async function getTickerPrice(ticker) {
+            var url = `/api/ticker/${ticker}`
+            var data = null
+            await axios.get(url)
+                .then(function (response) {
+                    // handle success
+                    data = response.data
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+                .then(function () {
+                    // always executed
+                });
+                return data
+        }
+
+        async function getHistoricalOrders() {
+            var url = `/api/hist-orders`
+            var data = null
+            await axios.get(url)
+                .then(function (response) {
+                    // handle success
+                    data = response.data
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+                .then(function () {
+                    // always executed
+                });
+                return data
+        }
+
+        async function main() {
+            var data = await getPersonalHoldings();
+            var tickerPrices = []
+
+            for(let index = 0; index < data.labels.length; index++) {
+                const ticker = data.labels[index]
+                tickerPrices.push(await getTickerPrice(ticker))
+            }
+
+            console.log(data)
+            console.log({tickerPrices})
+
+            for(let i = 0; i < data.balance.length; i++) {
+                if(tickerPrices[i].code == "200000") {
+                    let price = parseFloat(tickerPrices[i].price)
+                    data.balance[i] = parseFloat(data.balance[i]) * price
+                } else {
+                    data.balance[i] = 0
+                }
+            }
+            
+            console.log(data.balance)
+
+            var myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Portfolio',
+                        data: data.balance,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                        ],
+                        borderWidth: 1,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 20
+                    }
+                }
+            });
+
+            console.log(await getHistoricalOrders())
+
+        }
+
+        main()
+        
+    </script>
+    <style>
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            padding: 0;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        .grid {
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1;
+            grid-template-rows: 150px auto;
+
+        }
+        .navbar {
+            padding: 2rem;
+        }
+        .chart-container {
+            position: relative; 
+            height:40vw; 
+            width: 40vw;
+        }
+    </style>
+</body>
+
+</html>
